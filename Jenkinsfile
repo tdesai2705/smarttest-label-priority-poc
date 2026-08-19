@@ -146,7 +146,7 @@ PYEOF
                                 | grep "::" \\
                                 | smart-tests --log-level audit subset pytest \\
                                     --session @session.txt \\
-                                    --target 50% \\
+                                    --confidence 80% \\
                                     --use-case one-commit \\
                                     --prioritized-tests-mapping smart-tests-mapping.json \\
                                     > subset.txt 2> subset_stderr.log
