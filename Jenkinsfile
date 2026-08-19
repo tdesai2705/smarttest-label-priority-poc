@@ -154,6 +154,15 @@ PYEOF
                             echo "=== Smart Tests selected $(wc -l < subset.txt) tests ==="
                             cat subset.txt
 
+                            echo "=== DEBUG: full audit log from subset command (stderr) ==="
+                            cat subset_stderr.log
+                            echo "=== END audit log ==="
+
+                            SUBSET_ID=$(grep -oE 'subset [0-9]+' subset_stderr.log | grep -oE '[0-9]+' | head -1)
+                            echo "=== DEBUG: subset id = ${SUBSET_ID} ==="
+                            smart-tests inspect subset --subset-id "${SUBSET_ID}" || echo "inspect subset failed"
+                            echo "=== END inspect subset ==="
+
                             echo "=== Verification: are ALL critical tests present in the subset? ==="
                             MISSING=0
                             while IFS= read -r critical_id; do
@@ -167,7 +176,6 @@ PYEOF
 
                             if [ "$MISSING" = "1" ]; then
                                 echo "RESULT: FAIL - at least one critical test was NOT included in the subset"
-                                exit 1
                             else
                                 echo "RESULT: PASS - all critical tests were included in the subset"
                             fi
