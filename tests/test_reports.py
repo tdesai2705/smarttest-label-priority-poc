@@ -16,3 +16,7 @@ def test_report_page_load_shows_skeleton_loader():
 
 def test_report_can_be_scheduled_for_email_delivery():
     assert True
+
+
+def test_report_export_supports_xlsx():
+    assert True

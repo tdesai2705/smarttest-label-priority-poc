@@ -127,7 +127,7 @@ PYEOF
             }
         }
 
-        stage('Test — observation mode') {
+        stage('Test — irrelevant-change skip test (Usha ask)') {
             steps {
                 container('python') {
                     withCredentials([string(credentialsId: 'smart-tests-token-ptsv1', variable: 'SMART_TESTS_TOKEN')]) {
@@ -137,26 +137,53 @@ PYEOF
                             smart-tests record session \\
                                 --build ${BUILD_TAG} \\
                                 --test-suite label-priority-poc \\
-                                --observation \\
                                 > session.txt
 
                             echo "Session: $(cat session.txt)"
 
+                            echo "############################################################"
+                            echo "# RUN A: high confidence + mapping present (does mapping force-include regardless of relevance?)"
+                            echo "############################################################"
                             PYTHONPATH=. pytest tests/ --collect-only -q \\
                                 | grep "::" \\
                                 | smart-tests --log-level audit subset pytest \\
                                     --session @session.txt \\
+                                    --confidence 97% \\
                                     --use-case one-commit \\
                                     --prioritized-tests-mapping smart-tests-mapping.json \\
-                                    > subset.txt 2> subset_stderr.log
+                                    > subset_with_mapping.txt 2> subset_with_mapping_stderr.log
 
-                            echo "=== Smart Tests selected $(wc -l < subset.txt) tests (observation mode = should be ALL) ==="
-                            cat subset.txt
+                            echo "=== WITH MAPPING: selected $(wc -l < subset_with_mapping.txt) / 18 tests ==="
+                            cat subset_with_mapping.txt
+
+                            echo "############################################################"
+                            echo "# RUN B: high confidence, NO mapping (baseline AI relevance judgment only)"
+                            echo "############################################################"
+                            PYTHONPATH=. pytest tests/ --collect-only -q \\
+                                | grep "::" \\
+                                | smart-tests --log-level audit subset pytest \\
+                                    --session @session.txt \\
+                                    --confidence 97% \\
+                                    --use-case one-commit \\
+                                    > subset_no_mapping.txt 2> subset_no_mapping_stderr.log
+
+                            echo "=== NO MAPPING: selected $(wc -l < subset_no_mapping.txt) / 18 tests ==="
+                            cat subset_no_mapping.txt
+
+                            echo "############################################################"
+                            echo "# COMPARISON: this commit only touched tests/test_reports.py (zero critical tests)."
+                            echo "# Does either run correctly SKIP the auth/checkout critical tests as irrelevant?"
+                            echo "############################################################"
+                            while IFS= read -r critical_id; do
+                                IN_MAPPING="present"; grep -qF "$critical_id" subset_with_mapping.txt || IN_MAPPING="SKIPPED"
+                                IN_BASELINE="present"; grep -qF "$critical_id" subset_no_mapping.txt || IN_BASELINE="SKIPPED"
+                                echo "$critical_id | with-mapping: $IN_MAPPING | no-mapping-baseline: $IN_BASELINE"
+                            done < critical-node-ids.txt
 
                             set --
                             while IFS= read -r line; do
                                 set -- "$@" "$line"
-                            done < subset.txt
+                            done < subset_with_mapping.txt
 
                             PYTHONPATH=. pytest "$@" \\
                                 --junitxml=test-results/results.xml \\
