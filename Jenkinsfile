@@ -148,7 +148,7 @@ PYEOF
                                 | grep "::" \\
                                 | smart-tests --log-level audit subset pytest \\
                                     --session @session.txt \\
-                                    --confidence 97% \\
+                                    --confidence 30% \\
                                     --use-case one-commit \\
                                     --prioritized-tests-mapping smart-tests-mapping.json \\
                                     > subset_with_mapping.txt 2> subset_with_mapping_stderr.log
@@ -163,7 +163,7 @@ PYEOF
                                 | grep "::" \\
                                 | smart-tests --log-level audit subset pytest \\
                                     --session @session.txt \\
-                                    --confidence 97% \\
+                                    --confidence 30% \\
                                     --use-case one-commit \\
                                     > subset_no_mapping.txt 2> subset_no_mapping_stderr.log
 
