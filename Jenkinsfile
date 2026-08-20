@@ -1,16 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-<<<<<<< Updated upstream
-// OIDC handshake test only. Per Anudeep's guidance: don't generate a
-// SMART_TESTS_TOKEN api key, use Jenkins OIDC id-token auth instead
-// (https://docs.cloudbees.com/docs/cloudbees-smart-tests/latest/send-data-to-smart-tests/set-up-smart-tests/oidc-pipeline-authentication).
-//
-// First run is EXPECTED to report the subject as unregistered and print a
-// JSON block (issuer + normalized-sub) that must be pasted into this
-// workspace's Settings -> Trusted OIDC subjects. Subsequent runs then
-// authenticate automatically. This branch's job URL is the "sub" -- kept on
-// its own branch (distinct job URL) so it can be registered against exactly
-// one Smart Tests workspace.
-=======
 // Clean-workspace retest of tag-based test prioritization (see main branch for
 // the original POC + findings against the corrupted `tejas` workspace).
 //
@@ -26,7 +14,6 @@
 // switch to --target / --confidence subset mode and retest the mapping's
 // actual effect on selection -- see project-critical-test-prioritization
 // memory for full context.
->>>>>>> Stashed changes
 // ─────────────────────────────────────────────────────────────────────────────
 
 pipeline {
@@ -69,12 +56,13 @@ spec:
             }
         }
 
-        stage('Install Smart Tests CLI') {
+        stage('Install Dependencies') {
             steps {
                 container('python') {
                     sh '''
                         apt-get update -qq
                         apt-get install -y --no-install-recommends default-jre-headless git >/dev/null
+                        pip install --no-cache-dir -r requirements.txt
                         pip install --no-cache-dir "smart-tests-cli~=2.0"
                         smart-tests --version
                     '''
@@ -82,28 +70,19 @@ spec:
             }
         }
 
-        stage('OIDC verify') {
+        stage('Smart Tests — Record Build') {
             steps {
                 container('python') {
-<<<<<<< Updated upstream
-                    withCredentials([string(credentialsId: 'smart-tests-oidc-token', variable: 'SMART_TESTS_OIDC_TOKEN')]) {
-=======
                     withCredentials([string(credentialsId: 'smart-tests-token-ptsv1', variable: 'SMART_TESTS_TOKEN')]) {
->>>>>>> Stashed changes
                         sh '''
                             git config --global --add safe.directory ${WORKSPACE}
-                            export SMART_TESTS_BASE_URL=https://api.cloudbees.io
-                            echo "=== JOB_URL (expected sub) ==="
-                            echo "${JOB_URL}"
-                            echo "=== smart-tests verify --oidc ==="
-                            smart-tests verify --oidc || true
+                            smart-tests verify || true
+                            smart-tests record build --build ${BUILD_TAG} --source .
                         '''
                     }
                 }
             }
         }
-<<<<<<< Updated upstream
-=======
 
         stage('Generate tag-based mapping from pytest markers') {
             steps {
@@ -207,6 +186,5 @@ PYEOF
         success {
             echo "Pipeline done | Build: ${BUILD_NUMBER} | Workspace: PTS v1 (81353921-8255-4a5b-a916-aaf9caed3e11)"
         }
->>>>>>> Stashed changes
     }
 }
